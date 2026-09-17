@@ -4,10 +4,6 @@
 #define MAX 100
 #define LEN 100
 
-char S[MAX][LEN];
-int size = 0;
-
-// Check whether string already exists
 int exists(char set[][LEN], int n, char str[]) {
     for (int i = 0; i < n; i++) {
         if (strcmp(set[i], str) == 0)
@@ -16,7 +12,6 @@ int exists(char set[][LEN], int n, char str[]) {
     return 0;
 }
 
-// Add string if it does not already exist
 void add(char set[][LEN], int *n, char str[]) {
     if (strlen(str) > 0 && !exists(set, *n, str)) {
         strcpy(set[*n], str);
@@ -24,153 +19,94 @@ void add(char set[][LEN], int *n, char str[]) {
     }
 }
 
-// Generate next Sardinas-Patterson set
-int generateNext(char current[][LEN], int currentSize,
-                 char codes[][LEN], int n,
-                 char next[][LEN]) {
-
-    int nextSize = 0;
-
-    for (int i = 0; i < currentSize; i++) {
-
-        for (int j = 0; j < n; j++) {
-
-            int len1 = strlen(current[i]);
-            int len2 = strlen(codes[j]);
-
-            // current[i] = codes[j] + suffix
-            if (len1 > len2 &&
-                strncmp(current[i], codes[j], len2) == 0) {
-
-                char suffix[LEN];
-
-                strcpy(suffix, current[i] + len2);
-
-                add(next, &nextSize, suffix);
-            }
-
-            // codes[j] = current[i] + suffix
-            else if (len2 > len1 &&
-                     strncmp(codes[j], current[i], len1) == 0) {
-
-                char suffix[LEN];
-
-                strcpy(suffix, codes[j] + len1);
-
-                add(next, &nextSize, suffix);
-            }
-
-            // Equal strings => empty string
-            else if (len1 == len2 &&
-                     strcmp(current[i], codes[j]) == 0) {
-
-                return -1;
-            }
-        }
-    }
-
-    return nextSize;
-}
-
 int main() {
 
     int n;
-    char codes[MAX][LEN];
+    char str[MAX][LEN];
 
-    printf("Enter number of codes: ");
+    printf("Enter number of strings: ");
     scanf("%d", &n);
 
-    printf("Enter the codes:\n");
+    printf("Enter the strings:\n");
 
     for (int i = 0; i < n; i++) {
-        scanf("%s", codes[i]);
+        scanf("%s", str[i]);
     }
 
-    // First Sardinas-Patterson set S1
     char current[MAX][LEN];
     int currentSize = 0;
 
+    // Generate S1
     for (int i = 0; i < n; i++) {
-
         for (int j = 0; j < n; j++) {
 
             if (i == j)
                 continue;
 
-            int len1 = strlen(codes[i]);
-            int len2 = strlen(codes[j]);
+            int len1 = strlen(str[i]);
+            int len2 = strlen(str[j]);
 
-            // code[i] = code[j] + suffix
             if (len1 > len2 &&
-                strncmp(codes[i], codes[j], len2) == 0) {
+                strncmp(str[i], str[j], len2) == 0) {
 
-                char suffix[LEN];
-
-                strcpy(suffix, codes[i] + len2);
-
-                add(current, &currentSize, suffix);
+                add(current, &currentSize, str[i] + len2);
             }
 
-            // code[j] = code[i] + suffix
             else if (len2 > len1 &&
-                     strncmp(codes[j], codes[i], len1) == 0) {
+                     strncmp(str[j], str[i], len1) == 0) {
 
-                char suffix[LEN];
-
-                strcpy(suffix, codes[j] + len1);
-
-                add(current, &currentSize, suffix);
+                add(current, &currentSize, str[j] + len1);
             }
         }
     }
 
+    // S1 is empty
     if (currentSize == 0) {
-        printf("\nThe given code is UNIQUELY DECODABLE.\n");
+        printf("\nThe strings are UNIQUELY DECODABLE.\n");
         return 0;
     }
 
-    printf("\nSardinas-Patterson Sets:\n");
-
-    int iteration = 1;
-
     while (1) {
 
-        printf("S%d = { ", iteration);
+        char next[MAX][LEN];
+        int nextSize = 0;
 
         for (int i = 0; i < currentSize; i++) {
-            printf("%s ", current[i]);
+            for (int j = 0; j < n; j++) {
+
+                int len1 = strlen(current[i]);
+                int len2 = strlen(str[j]);
+
+                if (len1 > len2 &&
+                    strncmp(current[i], str[j], len2) == 0) {
+
+                    add(next, &nextSize, current[i] + len2);
+                }
+
+                else if (len2 > len1 &&
+                         strncmp(str[j], current[i], len1) == 0) {
+
+                    add(next, &nextSize, str[j] + len1);
+                }
+
+                else if (len1 == len2 &&
+                         strcmp(current[i], str[j]) == 0) {
+
+                    printf("\nThe strings are NOT UNIQUELY DECODABLE.\n");
+                    return 0;
+                }
+            }
         }
 
-        printf("}\n");
-
-        char next[MAX][LEN];
-
-        int nextSize = generateNext(
-            current,
-            currentSize,
-            codes,
-            n,
-            next
-        );
-
-        // Empty string found
-        if (nextSize == -1) {
-            printf("\nThe given code is NOT UNIQUELY DECODABLE.\n");
-            return 0;
-        }
-
-        // No new suffixes
         if (nextSize == 0) {
-            printf("\nThe given code is UNIQUELY DECODABLE.\n");
+            printf("\nThe strings are UNIQUELY DECODABLE.\n");
             return 0;
         }
 
-        // Same set appeared again
-        int same = 1;
+        // Check if same set occurs again
+        int same = (nextSize == currentSize);
 
-        if (nextSize != currentSize) {
-            same = 0;
-        } else {
+        if (same) {
             for (int i = 0; i < currentSize; i++) {
                 if (!exists(next, nextSize, current[i])) {
                     same = 0;
@@ -180,19 +116,14 @@ int main() {
         }
 
         if (same) {
-            printf("\nThe given code is UNIQUELY DECODABLE.\n");
+            printf("\nThe strings are UNIQUELY DECODABLE.\n");
             return 0;
         }
 
-        // Copy next set into current
         currentSize = nextSize;
 
         for (int i = 0; i < nextSize; i++) {
             strcpy(current[i], next[i]);
         }
-
-        iteration++;
     }
-
-    return 0;
 }
